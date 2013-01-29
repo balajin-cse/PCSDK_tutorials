@@ -2,20 +2,25 @@
 //
 
 #include "stdafx.h"
-#include "pxcsession.h"
-#include "pxcsmartptr.h"
+#include "util_render.h"
+#include "util_pipeline.h"
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	PXCSmartPtr<PXCSession> session;
-	PXCSession_Create(&session);
-	for (int i = 0; ; i++) {
-		PXCSession::ImplDesc desc;
-		pxcStatus sts = session->QueryImpl(0, i, &desc);
-		if (sts < PXC_STATUS_NO_ERROR) break;
-		wprintf(L"Module: %s, iuid=0x%x\n", desc.friendlyName, desc.iuid);
+	UtilPipeline pipeline;
+	pipeline.EnableImage(PXCImage::COLOR_FORMAT_RGB32);
+	pipeline.Init();
+
+	UtilRender color_render(L"Color Stream");
+	for (;;) {
+		if (!pipeline.AcquireFrame(true)) break;
+
+		PXCImage *color_image = pipeline.QueryImage(PXCImage::IMAGE_TYPE_COLOR);
+		if (!color_render.RenderFrame(color_image)) break;
+		pipeline.ReleaseFrame();
 	}
+	pipeline.Close();
 
 	return 0;
 }
